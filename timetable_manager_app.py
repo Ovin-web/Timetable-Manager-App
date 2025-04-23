@@ -137,4 +137,4 @@ elif choice == "Remove Class":
             save_timetable(timetable)
             st.success(f"Class '{selected}' removed.")
     else:
-        st.warning("No classes found for that day.")
+        st.warning("No classes found for that day.") 
