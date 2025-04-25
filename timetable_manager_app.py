@@ -51,28 +51,33 @@ def get_current_and_next_class(timetable):
 st.set_page_config(page_title="Timetable Manager", layout="centered")
 st.title("📅 Timetable Manager with Notifications")
 
-# Admin Mode toggle
-st.sidebar.markdown("---")
-admin_mode = st.sidebar.checkbox("🔐 Enable Admin Mode")
+# Reset notifications if needed
+if 'notified' not in st.session_state:
+    st.session_state['notified'] = False
 
-menu = ["View Timetable"]
-if admin_mode:
-    menu += ["Add Class", "Edit Class", "Remove Class"]
+# Menu and options
+menu = ["View Timetable", "Add Class", "Edit Class", "Remove Class"]
 choice = st.sidebar.selectbox("Menu", menu)
 
 timetable = load_timetable()
 
-# Display notifications
+# Display notifications only if not already shown
 current, upcoming = get_current_and_next_class(timetable)
 if current:
-    st.success(f"🟢 Current: {current[0]} ({current[1]} - {current[2]})")
+    if not st.session_state['notified']:  # Show the notification only once
+        st.success(f"🟢 Current: {current[0]} ({current[1]} - {current[2]})")
+        st.session_state['notified'] = True  # Set flag to prevent repeated notifications
 elif upcoming:
     next_time = datetime.strptime(convert_to_24hr_format(upcoming[1]), "%H:%M") - timedelta(minutes=5)
     now_time = datetime.now(pytz.timezone("Africa/Dar_es_Salaam")).strftime("%H:%M")
     if now_time >= next_time.strftime("%H:%M"):
-        st.warning(f"🔔 Next: {upcoming[0]} at {upcoming[1]} — starts in 5 mins")
+        if not st.session_state['notified']:
+            st.warning(f"🔔 Next: {upcoming[0]} at {upcoming[1]} — starts in 5 mins")
+            st.session_state['notified'] = True  # Set flag for next class notification
 else:
-    st.info("No upcoming or current classes right now.")
+    if not st.session_state['notified']:
+        st.info("No upcoming or current classes right now.")
+        st.session_state['notified'] = True  # Set flag for no current class
 
 # View
 if choice == "View Timetable":
