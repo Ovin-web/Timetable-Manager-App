@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import pytz
 
 # Load timetable
-
 def load_timetable():
     try:
         with open("timetable.json", "r") as f:
@@ -13,13 +12,11 @@ def load_timetable():
         return {}
 
 # Save timetable
-
 def save_timetable(timetable):
     with open("timetable.json", "w") as f:
         json.dump(timetable, f, indent=4)
 
 # Convert to 24hr format
-
 def convert_to_24hr_format(time_str):
     try:
         return datetime.strptime(time_str, "%I:%M %p").strftime("%H:%M")
@@ -27,7 +24,6 @@ def convert_to_24hr_format(time_str):
         return time_str
 
 # Determine current/next class
-
 def get_current_and_next_class(timetable):
     tz = pytz.timezone("Africa/Dar_es_Salaam")
     now = datetime.now(tz)
@@ -52,11 +48,16 @@ def get_current_and_next_class(timetable):
     return current, next_up
 
 # Streamlit app
-
 st.set_page_config(page_title="Timetable Manager", layout="centered")
 st.title("📅 Timetable Manager with Notifications")
 
-menu = ["View Timetable", "Add Class", "Edit Class", "Remove Class"]
+# Admin Mode toggle
+st.sidebar.markdown("---")
+admin_mode = st.sidebar.checkbox("🔐 Enable Admin Mode")
+
+menu = ["View Timetable"]
+if admin_mode:
+    menu += ["Add Class", "Edit Class", "Remove Class"]
 choice = st.sidebar.selectbox("Menu", menu)
 
 timetable = load_timetable()
@@ -137,4 +138,4 @@ elif choice == "Remove Class":
             save_timetable(timetable)
             st.success(f"Class '{selected}' removed.")
     else:
-        st.warning("No classes found for that day.") 
+        st.warning("No classes found for that day.")
