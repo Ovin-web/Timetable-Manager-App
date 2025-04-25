@@ -1,39 +1,43 @@
-# Python bytecode
-*.pyc
-*.pyo
-*.pyd
+# Byte-compiled / optimized / DLL files
 __pycache__/
-
-# IDEs and editors
-.vscode/
-.idea/
-*.sublime-workspace
-*.sublime-project
-
-# MacOS system files
-.DS_Store
-
-# Windows system files
-Thumbs.db
+*.py[cod]
+*$py.class
 
 # Virtual environments
-venv/
 env/
+venv/
+ENV/
+.venv/
 
-# Logs
+# VS Code settings
+.vscode/
+
+# Streamlit cache
+.streamlit/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Python logs
 *.log
-
-# Configuration files
-*.ini
-*.cfg
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 
-# Distribution files
-*.egg
-*.egg-info
-dist/
+# Environment variables
+.env
+
+# Compiled C files
+*.so
+
+# Pytest cache
+.pytest_cache/
+
+# MyPy cache
+.mypy_cache/
+
+# Build files
 build/
-*.tar.gz
-*.zip
+dist/
+*.egg-info/
