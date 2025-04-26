@@ -1,146 +1,108 @@
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 import json
-from datetime import datetime, timedelta
-import pytz
+import datetime
 
-# Load timetable
-def load_timetable():
+# 🔁 Auto-refresh every 10 seconds
+st_autorefresh(interval=10 * 1000, key="refresh")
+
+# 📁 Load data
+def load_data():
     try:
         with open("timetable.json", "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        return {}
+        return []
 
-# Save timetable
-def save_timetable(timetable):
+# 💾 Save data
+def save_data(data):
     with open("timetable.json", "w") as f:
-        json.dump(timetable, f, indent=4)
+        json.dump(data, f, indent=4)
 
-# Convert to 24hr format
-def convert_to_24hr_format(time_str):
-    try:
-        return datetime.strptime(time_str, "%I:%M %p").strftime("%H:%M")
-    except ValueError:
-        return time_str
+# 📆 Get next session based on current time
+def get_next_session(data):
+    now = datetime.datetime.now().strftime("%A %H:%M")
+    for item in data:
+        if item["day"] + " " + item["time"] > now:
+            return item
+    return None
 
-# Determine current/next class
-def get_current_and_next_class(timetable):
-    tz = pytz.timezone("Africa/Dar_es_Salaam")
-    now = datetime.now(tz)
-    today = now.strftime("%A")
-    current_time = now.strftime("%H:%M")
+# ✏️ Edit session
+def edit_session(index, new_item):
+    data = load_data()
+    data[index] = new_item
+    save_data(data)
 
-    current = None
-    next_up = None
+# ❌ Delete session
+def delete_session(index):
+    data = load_data()
+    data.pop(index)
+    save_data(data)
 
-    if today in timetable:
-        sorted_classes = sorted(timetable[today], key=lambda x: convert_to_24hr_format(x[1]))
-        for i, (name, start, end) in enumerate(sorted_classes):
-            start_24 = convert_to_24hr_format(start)
-            end_24 = convert_to_24hr_format(end)
+# 🖼️ UI
+st.set_page_config(page_title="Timetable Manager", layout="wide")
+st.title("🗓️ Timetable Manager")
 
-            if start_24 <= current_time <= end_24:
-                current = (name, start, end)
-            elif current_time < start_24:
-                next_up = (name, start, end)
-                break
-
-    return current, next_up
-
-# Streamlit app
-st.set_page_config(page_title="Timetable Manager", layout="centered")
-st.title("📅 Timetable Manager with Notifications")
-
-# Reset notifications if needed
-if 'notified' not in st.session_state:
-    st.session_state['notified'] = False
-
-# Menu and options
-menu = ["View Timetable", "Add Class", "Edit Class", "Remove Class"]
+menu = ["View Timetable", "Add Session"]
 choice = st.sidebar.selectbox("Menu", menu)
 
-timetable = load_timetable()
+if choice == "Add Session":
+    st.subheader("Add a New Class Session")
+    course = st.text_input("Course Name")
+    day = st.selectbox("Day", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
+    time = st.time_input("Time")
+    location = st.text_input("Location")
 
-# Display notifications only if not already shown
-current, upcoming = get_current_and_next_class(timetable)
-if current:
-    if not st.session_state['notified']:  # Show the notification only once
-        st.success(f"🟢 Current: {current[0]} ({current[1]} - {current[2]})")
-        st.session_state['notified'] = True  # Set flag to prevent repeated notifications
-elif upcoming:
-    next_time = datetime.strptime(convert_to_24hr_format(upcoming[1]), "%H:%M") - timedelta(minutes=5)
-    now_time = datetime.now(pytz.timezone("Africa/Dar_es_Salaam")).strftime("%H:%M")
-    if now_time >= next_time.strftime("%H:%M"):
-        if not st.session_state['notified']:
-            st.warning(f"🔔 Next: {upcoming[0]} at {upcoming[1]} — starts in 5 mins")
-            st.session_state['notified'] = True  # Set flag for next class notification
-else:
-    if not st.session_state['notified']:
-        st.info("No upcoming or current classes right now.")
-        st.session_state['notified'] = True  # Set flag for no current class
+    if st.button("Add Session"):
+        new_entry = {
+            "course": course,
+            "day": day,
+            "time": time.strftime("%H:%M"),
+            "location": location
+        }
+        data = load_data()
+        data.append(new_entry)
+        save_data(data)
+        st.success("✅ Session added!")
 
-# View
-if choice == "View Timetable":
-    st.subheader("📋 Current Timetable")
-    if timetable:
-        for day, classes in timetable.items():
-            st.write(f"### {day}")
-            for cls in classes:
-                st.write(f"- **{cls[0]}**: {cls[1]} - {cls[2]}")
+elif choice == "View Timetable":
+    st.subheader("📅 Your Timetable")
+    data = load_data()
+
+    if data:
+        for i, item in enumerate(data):
+            st.write(f"📘 **{item['course']}** on **{item['day']}** at **{item['time']}** in *{item['location']}*")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button(f"Edit {i}", key=f"edit_{i}"):
+                    with st.form(f"form_edit_{i}"):
+                        new_course = st.text_input("Course Name", value=item['course'])
+                        new_day = st.selectbox("Day", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], index=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].index(item['day']))
+                        new_time = st.time_input("Time", value=datetime.datetime.strptime(item['time'], "%H:%M").time())
+                        new_location = st.text_input("Location", value=item['location'])
+                        submitted = st.form_submit_button("Save Changes")
+                        if submitted:
+                            new_item = {
+                                "course": new_course,
+                                "day": new_day,
+                                "time": new_time.strftime("%H:%M"),
+                                "location": new_location
+                            }
+                            edit_session(i, new_item)
+                            st.success("✅ Session updated!")
+                            st.experimental_rerun()
+            with col2:
+                if st.button(f"Delete {i}", key=f"delete_{i}"):
+                    delete_session(i)
+                    st.warning("⚠️ Session deleted!")
+                    st.experimental_rerun()
+
+        st.markdown("---")
+        next_session = get_next_session(data)
+        if next_session:
+            st.success(f"🎯 **Next Session**: {next_session['course']} on {next_session['day']} at {next_session['time']} in {next_session['location']}")
+        else:
+            st.info("✅ No upcoming sessions today.")
     else:
-        st.write("No classes added yet.")
+        st.info("ℹ️ No timetable data found. Add a session first.")
 
-# Add
-elif choice == "Add Class":
-    st.subheader("➕ Add New Class")
-    with st.form("add_form"):
-        day = st.selectbox("Day", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
-        name = st.text_input("Class Name")
-        start = st.text_input("Start Time (e.g. 09:00 AM or 14:00)")
-        end = st.text_input("End Time (e.g. 10:00 AM or 15:00)")
-        submitted = st.form_submit_button("Add")
-
-        if submitted:
-            if day in timetable:
-                timetable[day].append([name, start, end])
-            else:
-                timetable[day] = [[name, start, end]]
-            save_timetable(timetable)
-            st.success("Class added successfully!")
-
-# Edit
-elif choice == "Edit Class":
-    st.subheader("✏️ Edit Existing Class")
-    day = st.selectbox("Select Day", list(timetable.keys()))
-    class_list = timetable.get(day, [])
-    if class_list:
-        class_names = [cls[0] for cls in class_list]
-        selected = st.selectbox("Select Class", class_names)
-        cls_index = class_names.index(selected)
-        with st.form("edit_form"):
-            new_name = st.text_input("New Class Name", value=class_list[cls_index][0])
-            new_start = st.text_input("New Start Time", value=class_list[cls_index][1])
-            new_end = st.text_input("New End Time", value=class_list[cls_index][2])
-            submitted = st.form_submit_button("Update")
-
-            if submitted:
-                timetable[day][cls_index] = [new_name, new_start, new_end]
-                save_timetable(timetable)
-                st.success("Class updated successfully!")
-    else:
-        st.warning("No classes found for that day.")
-
-# Remove
-elif choice == "Remove Class":
-    st.subheader("❌ Remove a Class")
-    day = st.selectbox("Select Day", list(timetable.keys()))
-    class_list = timetable.get(day, [])
-    if class_list:
-        class_names = [cls[0] for cls in class_list]
-        selected = st.selectbox("Select Class to Remove", class_names)
-        if st.button("Remove Class"):
-            timetable[day] = [cls for cls in class_list if cls[0] != selected]
-            save_timetable(timetable)
-            st.success(f"Class '{selected}' removed.")
-    else:
-        st.warning("No classes found for that day.")
