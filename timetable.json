@@ -1,13 +1,38 @@
 {
     "Monday": [
-        ["Mathematics", "09:00", "10:00"],
-        ["Data Science", "11:00", "12:30"]
+        [
+            "Physics-2",
+            "14:31",
+            "14:50"
+        ],
+        [
+            "Physics-2",
+            "14:31",
+            "14:50"
+        ]
     ],
-    "Tuesday": [
-        ["Physics", "10:00", "11:00"],
-        ["English", "12:00", "13:00"]
-    ],
+    "Tuesday": [],
     "Wednesday": [],
     "Thursday": [],
-    "Friday": []
+    "Friday": [
+        [
+            "Art",
+            "14:00",
+            "15:30"
+        ]
+    ],
+    "Saturday": [
+        [
+            "Extra Class: Math Revision",
+            "10:00",
+            "12:00"
+        ]
+    ],
+    "Sunday": [
+        [
+            "ENGINEERING PRINCIPLE",
+            "04:00",
+            "04:50"
+        ]
+    ]
 }
